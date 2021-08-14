@@ -22,15 +22,15 @@ export const customRedisRateLimiter = (req, res, next) => {
       process.exit(1);
     }
     // fetch records of current user using IP address, returns null when no record is found
-    redisClient.get(req.ip, function(err, record) {
+    redisClient.get(req.ip, (err, record) => {
       if (err) throw err;
       const currentRequestTime = moment();
 
       console.log(record);
       //  if no record is found , create a new record for user and store to redis
       if (record == null) {
-        let newRecord = [];
-        let requestLog = {
+        const newRecord = [];
+        const requestLog = {
           requestTimeStamp: currentRequestTime.unix(),
           requestCount: 1
         };
@@ -40,21 +40,20 @@ export const customRedisRateLimiter = (req, res, next) => {
       }
 
       // if record is found, parse it's value and calculate number of requests users has made wirhin the last window
-      let data = JSON.parse(record);
+      const data = JSON.parse(record);
 
-      let windowStartTimestamp = moment()
+      const windowStartTimestamp = moment()
         .subtract(WINDOW_SIZE_IN_HOURS, 'hours')
         .unix();
 
-      let requestsWithinWindow = data.filter(entry => {
-        return entry.requestTimeStamp > windowStartTimestamp;
-      });
+      const requestsWithinWindow = data.filter(entry => entry.requestTimeStamp > windowStartTimestamp);
 
       console.log('requestsWithinWindow', requestsWithinWindow);
 
-      let totalWindowRequestsCount = requestsWithinWindow.reduce((accumulator, entry) => {
-        return accumulator + entry.requestCount;
-      }, 0);
+      const totalWindowRequestsCount = requestsWithinWindow.reduce(
+        (accumulator, entry) => accumulator + entry.requestCount,
+        0
+      );
 
       // if number of requests made is greater than or equal to the desired maximum, return error
       if (totalWindowRequestsCount >= MAX_WINDOW_REQUEST_COUNT) {
@@ -65,8 +64,8 @@ export const customRedisRateLimiter = (req, res, next) => {
           );
       } else {
         // if number of requests made is lesser than allowed maximum, log new entry
-        let lastRequestLog = data[data.length - 1];
-        let potentialCurrentWindowIntervalStartTimeStamp = currentRequestTime
+        const lastRequestLog = data[data.length - 1];
+        const potentialCurrentWindowIntervalStartTimeStamp = currentRequestTime
           .subtract(WINDOW_LOG_INTERVAL_IN_HOURS, 'hours')
           .unix();
 
